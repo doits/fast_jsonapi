@@ -260,7 +260,8 @@ module FastJsonapi
           conditional_proc: options[:if],
           transform_method: @transform_method,
           links: options[:links],
-          lazy_load_data: options[:lazy_load_data]
+          lazy_load_data: options[:lazy_load_data],
+          params: options[:params]
         )
       end
 

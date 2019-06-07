@@ -133,7 +133,8 @@ module FastJsonapi
         subclass.cache_store_instance = cache_store_instance
         subclass.cache_store_options = cache_store_options
         subclass.set_type(subclass.reflected_record_type) if subclass.reflected_record_type
-        subclass.meta_to_serialize = meta_to_serialize
+        subclass.meta_core_to_serialize = meta_core_to_serialize
+        subclass.meta_to_serialize = meta_to_serialize.dup if meta_to_serialize.present?
         subclass.record_id = record_id
       end
 
@@ -208,23 +209,28 @@ module FastJsonapi
         }
       end
 
-      def attributes(*attributes_list, &block)
+      def add_attributes_to(attributes_list, block, target)
         attributes_list = attributes_list.first if attributes_list.first.class.is_a?(Array)
         options = attributes_list.last.is_a?(Hash) ? attributes_list.pop : {}
-        self.attributes_to_serialize = {} if self.attributes_to_serialize.nil?
 
         # to support calling `attribute` with a lambda, e.g `attribute :key, ->(object) { ... }`
         block = attributes_list.pop if attributes_list.last.is_a?(Proc)
 
-        attributes_list.each do |attr_name|
+        attributes_list.each_with_object(target) do |attr_name, agg|
           method_name = attr_name
           key = run_key_transform(method_name)
-          attributes_to_serialize[key] = Attribute.new(
+          agg[key] = Attribute.new(
             key: key,
             method: block || method_name,
             options: options
           )
         end
+      end
+
+      def attributes(*attributes_list, &block)
+        self.attributes_to_serialize = {} if self.attributes_to_serialize.nil?
+
+        add_attributes_to(attributes_list, block, attributes_to_serialize)
       end
 
       alias_method :attribute, :attributes
@@ -257,8 +263,16 @@ module FastJsonapi
         add_relationship(relationship)
       end
 
-      def meta(meta_name = nil, &block)
-        self.meta_to_serialize = block || meta_name
+      def meta(*meta_list, &block)
+        # for backwards compatibility when `meta` is called without a list
+        if meta_list.blank?
+          self.meta_core_to_serialize = block
+          return
+        end
+
+        self.meta_to_serialize = {} if self.meta_to_serialize.nil?
+
+        add_attributes_to(meta_list, block, meta_to_serialize)
       end
 
       def create_relationship(base_key, relationship_type, options, block)

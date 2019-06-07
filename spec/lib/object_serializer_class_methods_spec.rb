@@ -461,13 +461,13 @@ describe FastJsonapi::ObjectSerializer do
 
       after do
         movie.release_year = nil
+        MovieSerializer.meta_core_to_serialize = nil
         MovieSerializer.meta_to_serialize = nil
       end
 
       it 'returns correct hash when serializable_hash is called' do
         expect(serializable_hash[:data][:meta]).to eq ({ years_since_release: year_since_release_calculator(movie.release_year) })
       end
-    end
 
     context 'with lambda' do
       before do
@@ -477,11 +477,61 @@ describe FastJsonapi::ObjectSerializer do
 
       after do
         movie.release_year = nil
+        MovieSerializer.meta_core_to_serialize = nil
         MovieSerializer.meta_to_serialize = nil
       end
 
       it 'returns correct hash when serializable_hash is called' do
         expect(serializable_hash[:data][:meta]).to eq ({ years_since_release: year_since_release_calculator(movie.release_year) })
+      end
+    end
+
+    context 'with a meta call with param' do
+      before do
+        def movie.watch_count
+          1234
+        end
+
+        MovieSerializer.meta :watch_count
+      end
+
+      it 'returns correct hash when serializable_hash is called' do
+        expect(serializable_hash[:data][:meta]).to eq ({
+          years_since_release: year_since_release_calculator(movie.release_year),
+          watch_count: 1234
+        })
+      end
+    end
+
+    context 'with a meta call with param and block' do
+      before do
+        MovieSerializer.meta :watch_count do
+          4426
+        end
+      end
+
+      it 'returns correct hash when serializable_hash is called' do
+        expect(serializable_hash[:data][:meta]).to eq ({
+          years_since_release: year_since_release_calculator(movie.release_year),
+          watch_count: 4426
+        })
+      end
+    end
+
+    context 'with a meta call with param and &:proc' do
+      before do
+        def movie.watch_count
+          1234
+        end
+
+        MovieSerializer.meta :watched, &:watch_count
+      end
+
+      it 'returns correct hash when serializable_hash is called' do
+        expect(serializable_hash[:data][:meta]).to eq ({
+          years_since_release: year_since_release_calculator(movie.release_year),
+          watched: 1234
+        })
       end
     end
 

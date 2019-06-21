@@ -146,10 +146,10 @@ module FastJsonapi
 
               known_included_objects[code] = inc_obj
 
-              params = params.dup
-              params[:parent] = record
+              include_params = params.dup
+              include_params[:parent] = record
 
-              included_records << serializer.record_hash(inc_obj, fieldsets[serializer.record_type], relationship_item.serialization_params(params))
+              included_records << serializer.record_hash(inc_obj, fieldsets[serializer.record_type], relationship_item.serialization_params(include_params))
             end
           end
         end

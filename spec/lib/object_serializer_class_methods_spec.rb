@@ -503,6 +503,17 @@ describe FastJsonapi::ObjectSerializer do
       end
     end
 
+    context 'with a meta call with param and if proc that is false, so meta is empty' do
+      before do
+        MovieSerializer.meta_core_to_serialize = nil
+        MovieSerializer.meta :watch_count, if: proc { false }
+      end
+
+      it 'does not include meta key' do
+        expect(serializable_hash[:data]).not_to have_key(:meta)
+      end
+    end
+
     context 'with a meta call with param and block' do
       before do
         MovieSerializer.meta :watch_count do

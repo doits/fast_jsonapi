@@ -444,12 +444,27 @@ describe FastJsonapi::ObjectSerializer do
         expect(serializable_hash[:data][:attributes][:released_in_year]).to eq movie.release_year
       end
     end
+
+    context 'with lambda' do
+      before do
+        movie.release_year = 2008
+        MovieSerializer.attribute :released_in_year, &:release_year
+        MovieSerializer.attribute :name, ->(object) { object.local_name }
+      end
+
+      after do
+        MovieSerializer.attributes_to_serialize.delete(:released_in_year)
+      end
+
+      it 'returns correct hash when serializable_hash is called' do
+        expect(serializable_hash[:data][:attributes][:name]).to eq "english #{movie.name}"
+        expect(serializable_hash[:data][:attributes][:released_in_year]).to eq movie.release_year
+      end
+    end
   end
 
   describe '#meta' do
     subject(:serializable_hash) { MovieSerializer.new(movie).serializable_hash }
-
-    context 'with block' do
       before do
         movie.release_year = 2008
         MovieSerializer.meta do |movie|
@@ -465,20 +480,23 @@ describe FastJsonapi::ObjectSerializer do
         MovieSerializer.meta_to_serialize = nil
       end
 
+    context 'with block' do
+      before do
+        MovieSerializer.meta do |movie|
+          {
+            years_since_release: year_since_release_calculator(movie.release_year)
+          }
+        end
+      end
+
       it 'returns correct hash when serializable_hash is called' do
         expect(serializable_hash[:data][:meta]).to eq ({ years_since_release: year_since_release_calculator(movie.release_year) })
       end
+    end
 
     context 'with lambda' do
       before do
-        movie.release_year = 2008
         MovieSerializer.meta ->(movie) { { years_since_release: year_since_release_calculator(movie.release_year) } }
-      end
-
-      after do
-        movie.release_year = nil
-        MovieSerializer.meta_core_to_serialize = nil
-        MovieSerializer.meta_to_serialize = nil
       end
 
       it 'returns correct hash when serializable_hash is called' do
@@ -536,6 +554,23 @@ describe FastJsonapi::ObjectSerializer do
         end
 
         MovieSerializer.meta :watched, &:watch_count
+      end
+
+      it 'returns correct hash when serializable_hash is called' do
+        expect(serializable_hash[:data][:meta]).to eq ({
+          years_since_release: year_since_release_calculator(movie.release_year),
+          watched: 1234
+        })
+      end
+    end
+
+    context 'with a meta call with param and lambda' do
+      before do
+        def movie.watch_count
+          1234
+        end
+
+        MovieSerializer.meta :watched, ->(object) { object.watch_count }
       end
 
       it 'returns correct hash when serializable_hash is called' do

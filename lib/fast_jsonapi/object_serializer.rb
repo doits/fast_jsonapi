@@ -270,6 +270,18 @@ module FastJsonapi
           return
         end
 
+        # we allow to pass a lambda, e.g. `meta ->(object) { ... }`. in this
+        # case it is passed as an argument in `meta_list`, so we must check
+        # for it explicitly.
+        #
+        # we do not support multiple lambdas, e.g.
+        # `meta ->(...) { ... }, ->(...) { }`, because we assume the lambda
+        # is just a different way of passing a block `meta do ... end`
+        if meta_list.length == 1 && meta_list.first.is_a?(Proc)
+          self.meta_core_to_serialize = meta_list.first
+          return
+        end
+
         self.meta_to_serialize = {} if self.meta_to_serialize.nil?
 
         add_attributes_to(meta_list, block, meta_to_serialize)

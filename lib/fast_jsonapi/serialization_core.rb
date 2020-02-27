@@ -62,7 +62,7 @@ module FastJsonapi
       end
 
       def meta_hash(record, params = {})
-        base = meta_core_to_serialize ? FastJsonapi.call_proc(meta_core_to_serialize.call, record, params) : {}
+        base = meta_core_to_serialize ? FastJsonapi.call_proc(meta_core_to_serialize, record, params) : {}
         return base unless meta_to_serialize
 
         meta_to_serialize.each_with_object(base) do |(_k, attribute), hash|
